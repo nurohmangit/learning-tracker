@@ -554,11 +554,85 @@ function CourseView({ course, onOpenChapter, onAddChapter, onDeleteChapter, onTo
 }
 
 // ============================================================
+// PAPERWHITE OVERLAY
+// ============================================================
+function PaperwhiteReader({ title, breadcrumb, content, onClose }) {
+  const [fontSize, setFontSize] = useState(18);
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 200,
+      background: "#F5EDD6",
+      overflowY: "auto",
+      fontFamily: "'Lora', Georgia, serif",
+    }}>
+      {/* grain texture overlay */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+        backgroundImage: "url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")",
+        opacity: 0.6,
+      }} />
+
+      {/* TOP BAR */}
+      <div style={{
+        position: "sticky", top: 0, zIndex: 10,
+        background: "#F5EDD6",
+        borderBottom: "1px solid #D4C5A9",
+        padding: "12px 20px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* Close */}
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#8B7355", padding: 6, display: "flex", alignItems: "center" }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <span style={{ fontSize: 12, color: "#A0906E", fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.5 }}>{breadcrumb}</span>
+        </div>
+        {/* Font size controls */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={() => setFontSize(s => Math.max(14, s - 2))} style={{ background: "none", border: "1px solid #D4C5A9", color: "#8B7355", width: 32, height: 32, borderRadius: 6, cursor: "pointer", fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>A</button>
+          <button onClick={() => setFontSize(s => Math.min(28, s + 2))} style={{ background: "none", border: "1px solid #D4C5A9", color: "#8B7355", width: 36, height: 36, borderRadius: 6, cursor: "pointer", fontSize: 20, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>A</button>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto", padding: "40px 28px 100px" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 600, color: "#2C1810", marginBottom: 8, lineHeight: 1.3, fontFamily: "'Lora', Georgia, serif", letterSpacing: -0.3 }}>{title}</h1>
+        <div style={{ width: 48, height: 3, background: "#C4A882", borderRadius: 99, marginBottom: 36 }} />
+        {content
+          ? <div style={{ fontSize: fontSize, lineHeight: 1.95, color: "#2C1810", fontFamily: "'Lora', Georgia, serif", letterSpacing: 0.2 }} dangerouslySetInnerHTML={{ __html: content }} />
+          : <p style={{ color: "#A0906E", fontStyle: "italic", fontSize: fontSize }}>Belum ada catatan untuk bagian ini.</p>
+        }
+      </div>
+
+      {/* PAGE BOTTOM FADE */}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 80, background: "linear-gradient(to top, #F5EDD6, transparent)", pointerEvents: "none", zIndex: 5 }} />
+    </div>
+  );
+}
+
+// ============================================================
 // CHAPTER VIEW
 // ============================================================
 function ChapterView({ course, chapter, onUpdateNote, onToggleDone, onAddSub, onDeleteSub, onUpdateSub, onOpenSub }) {
   const [newSubTitle, setNewSubTitle] = useState("");
+  const [paperwhite, setPaperwhite] = useState(false);
   const color = course.color || "#6C63FF";
+
+  if (paperwhite) return (
+    <PaperwhiteReader
+      title={chapter.title}
+      breadcrumb={`${course.emoji} ${course.title}`}
+      content={chapter.note}
+      onClose={() => setPaperwhite(false)}
+    />
+  );
 
   return (
     <div>
@@ -569,15 +643,22 @@ function ChapterView({ course, chapter, onUpdateNote, onToggleDone, onAddSub, on
           {chapter.subs.length === 0 && (
             <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", flexShrink: 0 }}>
               <input type="checkbox" checked={chapter.done} onChange={e => onToggleDone(e.target.checked)} style={{ width: 20, height: 20, accentColor: color }} />
-              <span style={{ fontSize: 13, color: "#888" }}>Selesai</span>
+              <span style={{ fontSize: 13, color: "var(--text2)" }}>Selesai</span>
             </label>
           )}
         </div>
       </div>
 
-      {/* CHAPTER NOTE — FULL WIDTH */}
+      {/* CHAPTER NOTE */}
       <div style={{ marginBottom: 24 }}>
-        <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text2)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>📝 Catatan Bab</h3>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 1 }}>📝 Catatan Bab</h3>
+          {chapter.note && (
+            <button onClick={() => setPaperwhite(true)} title="Baca mode Paperwhite" style={{ background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 16, color: "var(--text2)", display: "flex", alignItems: "center", gap: 5 }}>
+              📖 <span style={{ fontSize: 12, fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>Baca</span>
+            </button>
+          )}
+        </div>
         <RichEditor value={chapter.note} onChange={onUpdateNote} placeholder="Tulis catatan bab ini..." />
       </div>
 
@@ -587,7 +668,7 @@ function ChapterView({ course, chapter, onUpdateNote, onToggleDone, onAddSub, on
         {chapter.subs.length === 0 && <p style={{ color: "var(--text3)", fontSize: 14, marginBottom: 12 }}>Belum ada sub bab.</p>}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
           {chapter.subs.map((s, i) => (
-            <div key={s.id} className="card" style={{ padding: "14px 16px", border: `1px solid ${s.done ? color + "33" : "rgba(255,255,255,0.07)"}`, cursor: "pointer" }}
+            <div key={s.id} className="card" style={{ padding: "14px 16px", border: `1px solid ${s.done ? color + "33" : "var(--border)"}`, cursor: "pointer" }}
               onClick={() => onOpenSub(s.id)}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ color: "var(--text3)", fontSize: 12, fontFamily: "'Space Mono', monospace", minWidth: 22 }}>{i + 1}.</span>
@@ -612,20 +693,38 @@ function ChapterView({ course, chapter, onUpdateNote, onToggleDone, onAddSub, on
 // SUB NOTE VIEW — FULL SCREEN
 // ============================================================
 function SubNoteView({ course, chapter, sub, onUpdateSub }) {
+  const [paperwhite, setPaperwhite] = useState(false);
   const color = course.color || "#6C63FF";
+
+  if (paperwhite) return (
+    <PaperwhiteReader
+      title={sub.title}
+      breadcrumb={`${course.emoji} ${course.title} / ${chapter.title}`}
+      content={sub.note}
+      onClose={() => setPaperwhite(false)}
+    />
+  );
+
   return (
     <div>
       <div className="card" style={{ padding: "16px 18px", marginBottom: 20, borderLeft: `4px solid ${color}` }}>
-        <p style={{ color: "#666", fontSize: 12, marginBottom: 4 }}>{course.emoji} {course.title} / {chapter.title}</p>
+        <p style={{ color: "var(--text2)", fontSize: 12, marginBottom: 4 }}>{course.emoji} {course.title} / {chapter.title}</p>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <h1 style={{ fontSize: 20, fontWeight: 700 }}>{sub.title}</h1>
           <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", flexShrink: 0 }}>
             <input type="checkbox" checked={sub.done} onChange={e => onUpdateSub({ done: e.target.checked })} style={{ width: 20, height: 20, accentColor: color }} />
-            <span style={{ fontSize: 13, color: "#888" }}>Selesai</span>
+            <span style={{ fontSize: 13, color: "var(--text2)" }}>Selesai</span>
           </label>
         </div>
       </div>
-      <h3 style={{ fontSize: 13, fontWeight: 600, color: "#888", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>📝 Catatan Sub Bab</h3>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text2)", textTransform: "uppercase", letterSpacing: 1 }}>📝 Catatan Sub Bab</h3>
+        {sub.note && (
+          <button onClick={() => setPaperwhite(true)} title="Baca mode Paperwhite" style={{ background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 16, color: "var(--text2)", display: "flex", alignItems: "center", gap: 5 }}>
+            📖 <span style={{ fontSize: 12, fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>Baca</span>
+          </button>
+        )}
+      </div>
       <RichEditor value={sub.note} onChange={val => onUpdateSub({ note: val })} placeholder="Tulis catatan sub bab ini..." />
     </div>
   );
