@@ -305,18 +305,23 @@ export default function App() {
 
       {/* NAVBAR */}
       <nav style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(13,13,26,0.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(108,99,255,0.12)", padding: "0 16px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* HAMBURGER */}
+        {/* LEFT: hamburger (dashboard) atau back icon (halaman lain) */}
+        {view === "dashboard" ? (
           <button onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, display: "flex", flexDirection: "column", gap: 5, alignItems: "center", justifyContent: "center", minWidth: 40, minHeight: 40 }}>
             <span style={{ display: "block", width: 22, height: 2, background: "#f0f0f0", borderRadius: 2 }} />
             <span style={{ display: "block", width: 22, height: 2, background: "#f0f0f0", borderRadius: 2 }} />
             <span style={{ display: "block", width: 22, height: 2, background: "#f0f0f0", borderRadius: 2 }} />
           </button>
-          {view !== "dashboard" && (
-            <button onClick={goBack} style={{ background: "rgba(255,255,255,0.06)", border: "none", color: "#bbb", padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontSize: 14, fontFamily: "inherit", minHeight: 38 }}>← Kembali</button>
-          )}
-        </div>
+        ) : (
+          <button onClick={goBack} style={{ background: "none", border: "none", color: "#f0f0f0", cursor: "pointer", minWidth: 40, minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, padding: 8 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+        )}
+        {/* CENTER: Logo */}
         <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 15, color: "#6C63FF", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>◆ LearnTrack</span>
+        {/* RIGHT: Avatar */}
         <img src={user.photoURL} alt="" onClick={() => setSidebarOpen(true)} style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid #6C63FF", cursor: "pointer" }} />
       </nav>
 
@@ -392,9 +397,8 @@ function DashboardView({ courses, onOpen, onDelete, onAdd, user }) {
                   </div>
                   <ProgressBar percent={progress} color={color} height={8} />
                 </div>
-                <div style={{ padding: "0 16px 14px", display: "flex", gap: 8 }}>
-                  <button className="btn-ghost" style={{ flex: 1 }} onClick={() => onOpen(c.id)}>Buka →</button>
-                  <button className="btn-danger" onClick={() => { if (confirm("Hapus course?")) onDelete(c.id); }}>Hapus</button>
+                <div style={{ padding: "0 16px 14px", display: "flex", justifyContent: "flex-end" }}>
+                  <button className="btn-danger" onClick={e => { e.stopPropagation(); if (confirm("Hapus course?")) onDelete(c.id); }}>Hapus</button>
                 </div>
               </div>
             );
@@ -439,7 +443,8 @@ function CourseView({ course, onOpenChapter, onAddChapter, onDeleteChapter, onTo
           const chProgress = ch.subs?.length > 0 ? Math.round(ch.subs.filter(s => s.done).length / ch.subs.length * 100) : (ch.done ? 100 : 0);
           const isDone = ch.subs?.length > 0 ? ch.subs.every(s => s.done) : ch.done;
           return (
-            <div key={ch.id} className="card" style={{ padding: "14px 16px", border: `1px solid ${isDone ? color + "33" : "rgba(255,255,255,0.07)"}` }}>
+            <div key={ch.id} className="card" style={{ padding: "14px 16px", border: `1px solid ${isDone ? color + "33" : "rgba(255,255,255,0.07)"}` }}
+              onClick={() => onOpenChapter(ch.id)}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ color: "#555", fontSize: 13, fontFamily: "'Space Mono', monospace", minWidth: 26 }}>{String(i + 1).padStart(2, "0")}</span>
                 <div style={{ flex: 1 }}>
@@ -452,11 +457,8 @@ function CourseView({ course, onOpenChapter, onAddChapter, onDeleteChapter, onTo
                   )}
                 </div>
                 {ch.note && <span style={{ fontSize: 15 }}>📝</span>}
-                {ch.subs?.length === 0 && <input type="checkbox" checked={ch.done} onChange={e => onToggleChapter(ch.id, e.target.checked)} style={{ width: 20, height: 20, accentColor: color, cursor: "pointer", flexShrink: 0 }} />}
-              </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <button className="btn-ghost" style={{ flex: 1 }} onClick={() => onOpenChapter(ch.id)}>Buka →</button>
-                <button className="btn-danger" onClick={() => { if (confirm("Hapus bab?")) onDeleteChapter(ch.id); }}>✕</button>
+                {ch.subs?.length === 0 && <input type="checkbox" checked={ch.done} onChange={e => { e.stopPropagation(); onToggleChapter(ch.id, e.target.checked); }} style={{ width: 20, height: 20, accentColor: color, cursor: "pointer", flexShrink: 0 }} />}
+                <button className="btn-danger" style={{ flexShrink: 0 }} onClick={e => { e.stopPropagation(); if (confirm("Hapus bab?")) onDeleteChapter(ch.id); }}>✕</button>
               </div>
             </div>
           );
@@ -504,16 +506,14 @@ function ChapterView({ course, chapter, onUpdateNote, onToggleDone, onAddSub, on
         {chapter.subs.length === 0 && <p style={{ color: "#555", fontSize: 14, marginBottom: 12 }}>Belum ada sub bab.</p>}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
           {chapter.subs.map((s, i) => (
-            <div key={s.id} className="card" style={{ padding: "14px 16px", border: `1px solid ${s.done ? color + "33" : "rgba(255,255,255,0.07)"}` }}>
+            <div key={s.id} className="card" style={{ padding: "14px 16px", border: `1px solid ${s.done ? color + "33" : "rgba(255,255,255,0.07)"}`, cursor: "pointer" }}
+              onClick={() => onOpenSub(s.id)}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ color: "#555", fontSize: 12, fontFamily: "'Space Mono', monospace", minWidth: 22 }}>{i + 1}.</span>
                 <span style={{ flex: 1, fontWeight: 500, fontSize: 15, textDecoration: s.done ? "line-through" : "none", color: s.done ? "#555" : "#f0f0f0" }}>{s.title}</span>
                 {s.note && <span style={{ fontSize: 14 }}>📝</span>}
                 <input type="checkbox" checked={s.done} onChange={e => { e.stopPropagation(); onUpdateSub(s.id, { done: e.target.checked }); }} style={{ width: 20, height: 20, accentColor: color, cursor: "pointer", flexShrink: 0 }} />
-              </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <button className="btn-ghost" style={{ flex: 1, fontSize: 14 }} onClick={() => onOpenSub(s.id)}>📝 Buka Catatan</button>
-                <button className="btn-danger" onClick={() => { if (confirm("Hapus sub bab?")) onDeleteSub(s.id); }}>✕</button>
+                <button className="btn-danger" style={{ flexShrink: 0 }} onClick={e => { e.stopPropagation(); if (confirm("Hapus sub bab?")) onDeleteSub(s.id); }}>✕</button>
               </div>
             </div>
           ))}
